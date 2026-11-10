@@ -199,7 +199,8 @@
 <section id="about">
   <h2>About</h2>
   <p>
-    Hi, I'm Bennett. I study Computer Engineering at Pitt, with a minor in Philosophy.
+    Hi, I'm Bennett. I study Computer Engineering at Pitt, with a concentration in
+    Autonomous Systems and a minor in Philosophy.
     Right now I'm on the Disney College Program working attractions at Walt Disney World,
     which has made me even more interested in the engineering behind rides and shows.
   </p>
@@ -211,7 +212,8 @@
   <p>Skills:</p>
   <table class="skills">
     <tr><td>Hardware</td><td>STM32, FPGA, stepper motors, keypads, 7-segment displays, UART</td></tr>
-    <tr><td>Languages</td><td>C++, C, ARM assembly, Python, Lua</td></tr>
+    <tr><td>Languages</td><td>C++, C, ARM assembly, VHDL, Python, Lua</td></tr>
+    <tr><td>Tools</td><td>Git, GitHub, CMake, VS Code, STM32CubeIDE, Catch2, Quartus, ModelSim</td></tr>
     <tr><td>Libraries</td><td>Tkinter, pygame, Google Colab</td></tr>
   </table>
 </section>
@@ -219,13 +221,13 @@
 <section id="projects">
   <h2>Projects</h2>
 
-  <h3>Dark ride ride-control simulator</h3>
-  <p class="meta">C++</p>
+  <h3>Virtual Attraction Control System (VACS)</h3>
+  <p class="meta">C++, CMake, Catch2. <a href="https://github.com/bennettfix/Dark-Ride-Control-System">Source code on GitHub</a></p>
   <p>
-    <!-- EDIT: make sure every feature listed here is actually built. -->
-    A simulator of the control system for a dark ride. It models ride vehicles moving
-    through block zones, dispatch and spacing logic, and how the system responds to
-    sensor faults and stop conditions.
+    A simulator of the control system for a multi-vehicle dark ride. It manages block
+    occupancy, only authorizes dispatch when the station's safety interlocks are satisfied,
+    and stops vehicle movement on sensor failures, communication faults, or an emergency
+    stop. Catch2 unit tests check the dispatch and fault behavior.
   </p>
   <!-- EDIT: this demo is a small JavaScript stand-in for the C++ simulator's block logic.
        Read through the script at the bottom so you can explain it in an interview. -->
@@ -245,15 +247,13 @@
 <pre class="sim-log" id="sim-log"></pre>
   </div>
   <p class="caption">
-    Try it: a small JavaScript illustration of the block logic from my C++ simulator
+    Try it: a small JavaScript illustration of the block logic from VACS
     (not the simulator itself). Each block holds one car, and a car
     only moves forward when the next block is clear. <tt>[1]</tt> is a moving car,
     <tt>&lt;1&gt;</tt> is a car being held. Fail the B2 sensor to see the fail-safe:
     a block the system can't read is treated as occupied, so nothing enters it.
   </p>
-  <!-- TODO: add when ready:
-  <p><a href="SIMULATOR-REPO-LINK">Source code</a> | <a href="SIMULATOR-VIDEO-LINK">Demo video</a></p>
-  -->
+  <!-- TODO: add demo video link when ready -->
 
   <h3>RC car</h3>
   <p class="meta">STM32, 12-24 V brushed DC motor. In progress.</p>
@@ -268,9 +268,9 @@
   <h3>Elevator control system</h3>
   <p class="meta">ARM Cortex-M4 assembly</p>
   <p>
-    An elevator controller written in assembly for a course project. It reads floor
-    requests from a keypad, drives a stepper motor to move between floors, and shows the
-    current floor on a 7-segment display.
+    An elevator controller written in assembly for a course project. It handles floor
+    selection from a keypad, tracks the car's position, drives a stepper motor between
+    floors, and shows the current floor on a 7-segment display.
   </p>
 
   <h3>STM32 ASCII animation</h3>
@@ -320,11 +320,12 @@
   <h2>Education</h2>
   <p>
     <b>University of Pittsburgh</b>, Swanson School of Engineering<br>
-    B.S. Computer Engineering, minor in Philosophy. Expected August 2028.
+    B.S. Computer Engineering, concentration in Autonomous Systems, minor in Philosophy.
+    Expected August 2028.
   </p>
   <p>Relevant coursework:</p>
   <table class="skills">
-    <tr><td>Spring 2027</td><td>Cyber-Physical Systems, Embedded Systems Design, Computer
+    <tr><td>Spring 2027<br>(registered)</td><td>Cyber-Physical Systems, Embedded Systems Design, Computer
       Organization and Architecture, Applied Discrete Mathematics, Junior Design</td></tr>
     <tr><td>Completed</td><td>Embedded Processors and Interfacing, Signals and Systems,
       Data Structures and Algorithms</td></tr>
@@ -333,6 +334,10 @@
 
 <section>
   <h2>Other things</h2>
+  <p>
+    Selected for Disney's Tech Behind the Dreams experience, a look at the technical
+    disciplines behind themed entertainment.
+  </p>
   <p>
     Eagle Scout (Troop 127) and former Senior Patrol Leader. Outside of engineering I backpack,
     play piano, and read classical literature.
