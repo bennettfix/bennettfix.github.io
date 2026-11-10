@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bennett Fix</title>
+<style>
+  :root {
+    --page: #d4d0c8;
+    --panel: #ffffff;
+    --text: #000000;
+    --muted: #555555;
+    --link: #0000ee;
+    --visited: #551a8b;
+    --border: #000000;
+    --bar: #000080;
+    --bar-text: #ffffff;
+    --side: #eeeef6;
+    --pre: #000080;
+    --alert: #cc0000;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #2e2e33;
+      --panel: #1d1d22;
+      --text: #e4e4e4;
+      --muted: #a8a8a8;
+      --link: #8ab4f8;
+      --visited: #c58af9;
+      --border: #6a6a75;
+      --bar: #2b3a8c;
+      --bar-text: #ffffff;
+      --side: #26262e;
+      --pre: #9fb4ff;
+      --alert: #ff6b6b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--text);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 17px;
+    line-height: 1.45;
+    margin: 0;
+    padding: 1.5em 0.75em;
+  }
+  a { color: var(--link); }
+  a:visited { color: var(--visited); }
+  a:focus { outline: 2px dotted var(--text); outline-offset: 2px; }
+  .page {
+    max-width: 58em;
+    margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: 4px 4px 0 var(--border);
+  }
+  header { padding: 1em 1.25em 0.75em; border-bottom: 1px solid var(--border); }
+  .banner {
+    color: var(--pre);
+    font-family: "Courier New", Courier, monospace;
+    font-size: min(14px, calc((100vw - 90px) / 40));
+    line-height: 1.2;
+    margin: 0 0 0.6em;
+    padding-bottom: 0.2em;
+    overflow: visible;
+    white-space: pre;
+  }
+  .sub { margin: 0; font-style: italic; }
+  .layout { display: grid; grid-template-columns: 12em 1fr; }
+  aside {
+    background: var(--side);
+    border-right: 1px solid var(--border);
+    padding: 1em;
+    font-size: 0.95em;
+  }
+  aside h4 { margin: 0 0 0.3em; font-size: 1em; }
+  aside ul { margin: 0 0 1.4em; padding-left: 1.1em; }
+  aside p { margin: 0 0 1.4em; }
+  main { padding: 0.5em 1.5em 1.5em; min-width: 0; }
+  main > section { max-width: 40em; }
+  h2 {
+    background: var(--bar);
+    color: var(--bar-text);
+    font-size: 1.15em;
+    padding: 0.15em 0.5em;
+    margin: 1.3em 0 0.6em;
+  }
+  h3 { font-size: 1.05em; margin: 1.1em 0 0.15em; }
+  .meta { color: var(--muted); font-style: italic; margin: 0 0 0.3em; }
+  pre.diagram {
+    font-family: "Courier New", Courier, monospace;
+    font-size: min(14px, 2.4vw);
+    color: var(--pre);
+    border: 1px dashed var(--border);
+    padding: 0.6em;
+    overflow-x: auto;
+    margin: 0.5em 0;
+  }
+  .caption { font-size: 0.9em; color: var(--muted); margin-top: 0; }
+  .sim { border: 1px solid var(--border); padding: 0.5em; margin: 0.6em 0; }
+  .sim pre.diagram { border-style: solid; margin: 0 0 0.4em; white-space: pre; }
+  .sim-status { margin: 0 0 0.4em; font-family: "Courier New", Courier, monospace; font-weight: bold; }
+  .sim-status.alert { color: var(--alert); }
+  .sim-controls { margin: 0 0 0.4em; display: flex; flex-wrap: wrap; gap: 0.4em; align-items: center; }
+  .sim-controls button { font: 14px "Times New Roman", Times, serif; padding: 0.15em 0.7em; }
+  .sim-log {
+    font-family: "Courier New", Courier, monospace;
+    font-size: min(13px, 2.6vw);
+    color: var(--muted);
+    margin: 0; min-height: 6.5em; overflow-x: auto;
+  }
+  .wheel-box { text-align: center; border: 1px solid var(--border); padding: 0.75em 0.5em 0.25em; }
+  #wheel { width: 100%; max-width: 320px; height: auto; aspect-ratio: 1; cursor: pointer; display: block; margin: 0 auto; }
+  #wheel-spin { font: bold 16px "Times New Roman", Times, serif; padding: 0.25em 1.2em; }
+  #wheel-result { min-height: 1.5em; }
+  video.clip { width: 100%; max-width: 32em; display: block; border: 1px solid var(--border); background: #000; margin: 0.4em 0; }
+  table.skills td:first-child { font-weight: bold; white-space: nowrap; }
+  table { border-collapse: collapse; }
+  td { padding: 0.15em 1.2em 0.15em 0; vertical-align: top; }
+  .badges { display: flex; flex-wrap: wrap; gap: 4px; }
+  .badge {
+    width: 88px; height: 31px;
+    display: flex; align-items: center; justify-content: center;
+    font: bold 11px Verdana, Geneva, sans-serif;
+    border: 2px outset #c0c0c0;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .b1 { background: #000080; color: #ffff00; }
+  .b2 { background: #ffffff; color: #006600; }
+  .b3 { background: #003594; color: #ffb81c; }
+  .b4 { background: #000000; color: #00ff00; }
+  .b5 { background: #c0c0c0; color: #000000; }
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 0.6em 1.25em;
+    font-size: 0.9em;
+    color: var(--muted);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5em;
+  }
+  .counter { flex-basis: 100%; text-align: center; }
+  .hits {
+    display: inline-block;
+    font: bold 15px "Courier New", Courier, monospace;
+    letter-spacing: 2px;
+    background: #000; color: #00ff00;
+    border: 2px inset #808080;
+    padding: 1px 5px;
+  }
+  @media (max-width: 640px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { border-right: 0; border-bottom: 1px solid var(--border); }
+    aside ul { columns: 2; }
+    main { padding: 0.25em 1em 1.25em; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+<pre class="banner" aria-label="Bennett Fix"> ____                               _    _       _____  _
+| __ )   ___   _ __   _ __    ___  | |_ | |_    |  ___|(_)__  __
+|  _ \  / _ \ | '_ \ | '_ \  / _ \ | __|| __|   | |_   | |\ \/ /
+| |_) ||  __/ | | | || | | ||  __/ | |_ | |_    |  _|  | | &gt;  &lt;
+|____/  \___| |_| |_||_| |_| \___|  \__| \__|   |_|    |_|/_/\_\</pre>
+<p class="sub">Computer Engineering student at the University of Pittsburgh. Rides, embedded systems, and hardware.</p>
+</header>
+
+<div class="layout">
+<aside>
+  <h4>Pages</h4>
+  <ul>
+    <li><a href="#about">About</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#education">Education</a></li>
+    <li><a href="resume.pdf">Resume (PDF)</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+
+  <h4>Currently</h4>
+  <!-- EDIT: keep this short and current -->
+  <p>Working attractions at Walt Disney World and building out the ride simulator.</p>
+
+  <h4>Built with</h4>
+  <div class="badges">
+    <span class="badge b1">C++</span>
+    <span class="badge b2">Python</span>
+    <span class="badge b4">ARM asm</span>
+    <span class="badge b3">Pitt ECE</span>
+    <span class="badge b5">STM32</span>
+  </div>
+</aside>
+
+<main>
+<section id="about">
+  <h2>About</h2>
+  <p>
+    Hi, I'm Bennett. I study Computer Engineering at Pitt, with a minor in Philosophy.
+    Right now I'm on the Disney College Program working attractions at Walt Disney World,
+    which has made me even more interested in the engineering behind rides and shows.
+  </p>
+  <p>
+    My real passion is hardware. Most of what I build is embedded systems and control
+    logic: microcontrollers, motors, sensors, and the low-level code that runs them. I'm
+    looking for hardware and embedded internships, especially in ride and show control.
+  </p>
+  <p>Skills:</p>
+  <table class="skills">
+    <tr><td>Hardware</td><td>STM32, FPGA, stepper motors, keypads, 7-segment displays, UART</td></tr>
+    <tr><td>Languages</td><td>C++, C, ARM assembly, Python, Lua</td></tr>
+    <tr><td>Libraries</td><td>Tkinter, pygame, Google Colab</td></tr>
+  </table>
+</section>
+
+<section id="projects">
+  <h2>Projects</h2>
+
+  <h3>Dark ride ride-control simulator</h3>
+  <p class="meta">C++</p>
+  <p>
+    <!-- EDIT: make sure every feature listed here is actually built. -->
+    A simulator of the control system for a dark ride. It models ride vehicles moving
+    through block zones, dispatch and spacing logic, and how the system responds to
+    sensor faults and stop conditions.
+  </p>
+  <!-- EDIT: this demo is a small JavaScript stand-in for the C++ simulator's block logic.
+       Read through the script at the bottom so you can explain it in an interview. -->
+  <div class="sim">
+<pre class="diagram" id="sim-view"> [LOAD] --&gt; [ B1 ] --&gt; [ B2 ] --&gt; [ B3 ] --&gt; [UNLD]
+    ^                                          |
+    +------------------------------------------+</pre>
+    <p class="sim-status" id="sim-status" aria-live="polite">Status: loading</p>
+    <p class="sim-controls">
+      <button type="button" id="sim-dispatch">Dispatch</button>
+      <button type="button" id="sim-run">Pause</button>
+      <button type="button" id="sim-estop">E-stop</button>
+      <button type="button" id="sim-reset">Reset</button>
+      <button type="button" id="sim-fault">Fail B2 sensor</button>
+      <label><input type="checkbox" id="sim-auto"> Auto dispatch</label>
+    </p>
+<pre class="sim-log" id="sim-log"></pre>
+  </div>
+  <p class="caption">
+    Try it: a small JavaScript illustration of the block logic from my C++ simulator
+    (not the simulator itself). Each block holds one car, and a car
+    only moves forward when the next block is clear. <tt>[1]</tt> is a moving car,
+    <tt>&lt;1&gt;</tt> is a car being held. Fail the B2 sensor to see the fail-safe:
+    a block the system can't read is treated as occupied, so nothing enters it.
+  </p>
+  <!-- TODO: add when ready:
+  <p><a href="SIMULATOR-REPO-LINK">Source code</a> | <a href="SIMULATOR-VIDEO-LINK">Demo video</a></p>
+  -->
+
+  <h3>RC car</h3>
+  <p class="meta">STM32, 12-24 V brushed DC motor. In progress.</p>
+  <p>
+    An RC car I'm building from the ground up around an STM32. This is the first time
+    I got the drive motor running.
+  </p>
+  <video class="clip" src="rc-car-motor-test.mp4" controls playsinline preload="metadata"
+    aria-label="First motor test of the RC car"></video>
+  <p class="caption">Ryan thinks he's very funny by saying the motor isn't spinning.</p>
+
+  <h3>Elevator control system</h3>
+  <p class="meta">ARM Cortex-M4 assembly</p>
+  <p>
+    An elevator controller written in assembly for a course project. It reads floor
+    requests from a keypad, drives a stepper motor to move between floors, and shows the
+    current floor on a 7-segment display.
+  </p>
+
+  <h3>STM32 ASCII animation</h3>
+  <p class="meta">C, STM32 Nucleo</p>
+  <p>
+    A small gift project for my mom: an STM32 Nucleo board that plays an ASCII art
+    animation over UART to a terminal.
+  </p>
+
+  <h3>Pathfinding and maze solving</h3>
+  <p class="meta">C++</p>
+  <p>
+    An A* search pathfinder and a BFS maze solver built for my data structures course,
+    along with my own list and queue implementations.
+  </p>
+
+  <h3>Teaching projects for kids</h3>
+  <p class="meta">Python, Tkinter, pygame</p>
+  <p>
+    While teaching a summer STEM class, I wrote programs simple enough for 11-year-olds to
+    read and change: a rock-paper-scissors predictor, a color classifier, a pixel shape
+    classifier, and a few pygame games including a space shooter and a tower defense game.
+  </p>
+</section>
+
+<section id="experience">
+  <h2>Experience</h2>
+
+  <h3>Attractions Cast Member, Walt Disney World</h3>
+  <p class="meta">Disney College Program, Aug 2026 to present</p>
+  <p>Operate and load guests on Slinky Dog Dash at Disney's Hollywood Studios.</p>
+
+  <h3>STEM Instructor, Lavner Education</h3>
+  <p class="meta">Summer 2026</p>
+  <p>
+    Taught Python and basic neural network concepts to beginners. Rewrote parts of the
+    curriculum when it proved too advanced for the group, including a scaffolded MNIST
+    classifier notebook for class use.
+  </p>
+
+  <h3>Instructor, Athena Coding</h3>
+  <p class="meta">Summer 2025</p>
+  <p>Learned Lua and taught it to campers.</p>
+</section>
+
+<section id="education">
+  <h2>Education</h2>
+  <p>
+    <b>University of Pittsburgh</b>, Swanson School of Engineering<br>
+    B.S. Computer Engineering, minor in Philosophy. Expected August 2028.
+  </p>
+  <p>Relevant coursework:</p>
+  <table class="skills">
+    <tr><td>Spring 2027</td><td>Cyber-Physical Systems, Embedded Systems Design, Computer
+      Organization and Architecture, Applied Discrete Mathematics, Junior Design</td></tr>
+    <tr><td>Completed</td><td>Embedded Processors and Interfacing, Signals and Systems,
+      Data Structures and Algorithms</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>Other things</h2>
+  <p>
+    Eagle Scout (Troop 127) and former Senior Patrol Leader. Outside of engineering I backpack,
+    play piano, and read classical literature.
+  </p>
+</section>
+
+<section id="prize">
+  <h2>Prize wheel</h2>
+  <p>Thanks for visiting. Spin the wheel to claim a prize. Every spin is a winner.</p>
+  <div class="wheel-box">
+    <canvas id="wheel" role="img" aria-label="Prize wheel"></canvas>
+    <p><button type="button" id="wheel-spin">Spin the wheel</button></p>
+    <p id="wheel-result" aria-live="polite"></p>
+  </div>
+</section>
+
+<section id="contact">
+  <h2>Contact</h2>
+  <p>
+    Email: <a href="mailto:bennettdfix@gmail.com">bennettdfix@gmail.com</a><br>
+    GitHub: <a href="https://github.com/bennettfix">github.com/bennettfix</a><br>
+    LinkedIn: <a href="https://www.linkedin.com/in/bennettfix">linkedin.com/in/bennettfix</a>
+  </p>
+</section>
+</main>
+</div>
+
+<footer>
+  <span class="counter">You are visitor number <span class="hits" id="hits">000000000</span></span>
+  <span>Last updated November 10, 2026. Site built with help from Claude (AI);
+    projects and engineering work are my own.</span>
+  <span><a href="#">Back to top</a></span>
+</footer>
+
+</div>
+<script>
+document.getElementById("hits").textContent =
+  String(Math.floor(Math.random() * 100000000) + 1).padStart(9, "0");
+</script>
+<script>
+(function () {
+  var NAMES = ["LOAD", "B1", "B2", "B3", "UNLD"];
+  var LABELS = ["[LOAD]", "[ B1 ]", "[ B2 ]", "[ B3 ]", "[UNLD]"];
+  var TRAVEL = [2, 3, 3, 3, 4]; // ticks a car spends in each block before it can leave
+  var view = document.getElementById("sim-view");
+  var statusEl = document.getElementById("sim-status");
+  var logEl = document.getElementById("sim-log");
+  var autoEl = document.getElementById("sim-auto");
+  var runBtn = document.getElementById("sim-run");
+  var cars, t, estop, dispatchReq, log, running, fault = -1;
+
+  function add(msg) {
+    log.unshift("t=" + String(t).padStart(3, "0") + "  " + msg);
+    log = log.slice(0, 6);
+  }
+  function carIn(b) {
+    for (var i = 0; i < cars.length; i++) if (cars[i].b === b) return cars[i];
+    return null;
+  }
+
+  function init() {
+    cars = [{ id: 1, b: 0, time: 2, held: false },
+            { id: 2, b: 2, time: 0, held: false },
+            { id: 3, b: 4, time: 0, held: false }];
+    t = 0; estop = false; dispatchReq = false; log = []; fault = -1;
+    document.getElementById("sim-fault").textContent = "Fail B2 sensor";
+    add("System ready. Car 1 at load, waiting for dispatch.");
+    render();
+  }
+
+  function step() {
+    if (estop || !running) return;
+    t++;
+    cars.forEach(function (c) {
+      c.time++;
+      var next = (c.b + 1) % NAMES.length;
+      var ready = c.time >= TRAVEL[c.b];
+      if (c.b === 0) ready = ready && (dispatchReq || autoEl.checked);
+      if (!ready) return;
+      if (carIn(next) || next === fault) {
+        if (!c.held) add("Car " + c.id + " held in " + NAMES[c.b] + ": " + NAMES[next] +
+          (next === fault ? " sensor failed, treated as occupied" : " occupied"));
+        c.held = true;
+        return;
+      }
+      if (c.b === 0) { add("Car " + c.id + " dispatched"); dispatchReq = false; }
+      else if (c.held) add("Car " + c.id + " released from " + NAMES[c.b]);
+      c.held = false; c.b = next; c.time = 0;
+      if (next === 0) add("Car " + c.id + " arrived at load");
+    });
+    render();
+  }
+
+  function render() {
+    var row = new Array(52).join(" ").split("");
+    for (var b = 0; b < NAMES.length; b++) {
+      var c = carIn(b), col = 2 + 11 * b;
+      var mark = c ? (c.held ? "<" + c.id + ">" : "[" + c.id + "]") : " . ";
+      for (var k = 0; k < 3; k++) row[col + k] = mark[k];
+    }
+    view.textContent =
+      " " + LABELS.map(function (l, i) { return i === fault ? "[!" + NAMES[i] + "!]" : l; }).join(" --> ") + "\n" +
+      row.join("").replace(/\s+$/, "") + "\n" +
+      "    ^" + new Array(44).join(" ") + "|\n" +
+      "    +" + new Array(44).join("-") + "+";
+    var occ = cars.length + "/" + NAMES.length;
+    if (estop) {
+      statusEl.textContent = "Status: E-STOP. Press Reset to clear.";
+      statusEl.className = "sim-status alert";
+    } else if (fault >= 0) {
+      statusEl.textContent = "Status: " + (running ? "RUNNING" : "PAUSED") + "   FAULT: " + NAMES[fault] + " sensor (fail-safe hold)";
+      statusEl.className = "sim-status alert";
+    } else {
+      statusEl.textContent = "Status: " + (running ? "RUNNING" : "PAUSED") + "   Blocks occupied: " + occ;
+      statusEl.className = "sim-status";
+    }
+    logEl.textContent = log.join("\n");
+  }
+
+  document.getElementById("sim-dispatch").onclick = function () {
+    if (estop) { add("Dispatch refused: E-stop active"); }
+    else if (!carIn(0)) { add("Dispatch refused: no car at load"); }
+    else { dispatchReq = true; add("Dispatch requested for car " + carIn(0).id); }
+    render();
+  };
+  document.getElementById("sim-estop").onclick = function () {
+    if (!estop) { estop = true; add("E-stop pressed. All motion stopped."); }
+    render();
+  };
+  document.getElementById("sim-reset").onclick = function () {
+    if (estop) { estop = false; add("E-stop reset. Ride ready."); }
+    else { init(); return; }
+    render();
+  };
+  document.getElementById("sim-fault").onclick = function () {
+    if (fault < 0) { fault = 2; add("B2 sensor failed. Block locked out as occupied."); this.textContent = "Repair B2 sensor"; }
+    else { fault = -1; add("B2 sensor repaired. Block back in service."); this.textContent = "Fail B2 sensor"; }
+    render();
+  };
+  runBtn.onclick = function () {
+    running = !running;
+    runBtn.textContent = running ? "Pause" : "Run";
+    render();
+  };
+
+  running = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  runBtn.textContent = running ? "Pause" : "Run";
+  init();
+  setInterval(step, 600);
+})();
+</script>
+<script>
+(function () {
+  var PRIZES = ["Firm handshake", "Free jumper wires", "Signed resume", "Interview Bennett!",
+                "Hand-soldered LED", "Infinite FPGA LUTs", "Bragging rights", "Knot-tying lesson"];
+  var WIN = 3;
+  var FILL = ["#ff2020", "#ffee00", "#00a000", "#ffd700", "#0040ff", "#00c8c8", "#b000b0", "#ff8c00"];
+  var INK  = ["#000", "#000", "#fff", "#000", "#fff", "#000", "#fff", "#000"];
+  var SIZE = 320, TAU = Math.PI * 2;
+  var canvas = document.getElementById("wheel");
+  var btn = document.getElementById("wheel-spin");
+  var result = document.getElementById("wheel-result");
+  var ctx = canvas.getContext("2d");
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = SIZE * dpr; canvas.height = SIZE * dpr;
+  ctx.scale(dpr, dpr);
+  var rotation = -Math.PI / 2, spinning = false;
+
+  // g goes 0 -> 1 as the wheel slows: the winning slice grows, the rest shrink
+  function weights(g) {
+    return PRIZES.map(function (_, i) { return i === WIN ? 1 + 11 * g : 1 - 0.96 * g; });
+  }
+  function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
+
+  function draw(rot, g) {
+    var w = weights(g), total = sum(w), cx = SIZE / 2, cy = SIZE / 2 + 6, r = SIZE / 2 - 16, a = rot;
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    for (var i = 0; i < w.length; i++) {
+      var span = w[i] / total * TAU;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a, a + span); ctx.closePath();
+      ctx.fillStyle = FILL[i]; ctx.fill();
+      ctx.strokeStyle = "#000"; ctx.lineWidth = 1.5; ctx.stroke();
+      if (span > 0.3) {
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(a + span / 2);
+        ctx.fillStyle = INK[i]; ctx.font = "bold 10px Verdana, Geneva, sans-serif";
+        ctx.textAlign = "right"; ctx.textBaseline = "middle";
+        ctx.fillText(PRIZES[i], r - 8, 0);
+        ctx.restore();
+      }
+      a += span;
+    }
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 13, 0, TAU); ctx.fillStyle = "#c0c0c0"; ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 11, 2); ctx.lineTo(cx + 11, 2); ctx.lineTo(cx, 28); ctx.closePath();
+    ctx.fillStyle = "#000"; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  function finish() {
+    spinning = false; btn.disabled = false; btn.textContent = "Spin again";
+    result.innerHTML = 'You won <b>an interview with Bennett Fix!</b> Claim your prize at ' +
+      '<a href="mailto:bennettdfix@gmail.com?subject=I%20won%20the%20prize%20wheel">bennettdfix@gmail.com</a>.';
+  }
+
+  function spin() {
+    if (spinning) return;
+    spinning = true; btn.disabled = true; result.textContent = "Spinning...";
+    // Work out where the winning slice's center sits once the wheel has fully reshaped,
+    // then pick a final rotation that parks it under the pointer at the top.
+    var wf = weights(1), tot = sum(wf);
+    var center = (sum(wf.slice(0, WIN)) + wf[WIN] / 2) / tot * TAU;
+    var start = rotation % TAU, target = -Math.PI / 2 - center;
+    var end = target + TAU * Math.ceil((start - target) / TAU) + TAU * 6;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      rotation = end; draw(rotation, 1); finish(); return;
+    }
+    var dur = 5500, t0 = performance.now();
+    function frame(now) {
+      var t = Math.min((now - t0) / dur, 1);
+      var ease = 1 - Math.pow(1 - t, 3);
+      var g = Math.min(Math.max((t - 0.35) / 0.6, 0), 1);
+      g = g * g * (3 - 2 * g);
+      rotation = start + (end - start) * ease;
+      draw(rotation, g);
+      if (t < 1) requestAnimationFrame(frame); else finish();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  btn.onclick = spin;
+  canvas.onclick = spin;
+  draw(rotation, 0);
+})();
+</script>
+</body>
+</html>
