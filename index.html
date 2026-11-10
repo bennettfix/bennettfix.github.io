@@ -227,7 +227,8 @@
     A simulator of the control system for a multi-vehicle dark ride. It manages block
     occupancy, only authorizes dispatch when the station's safety interlocks are satisfied,
     and stops vehicle movement on sensor failures, communication faults, or an emergency
-    stop. Catch2 unit tests check the dispatch and fault behavior.
+    stop. A show control layer triggers lighting, audio, and effects cues as vehicles
+    reach each scene. Catch2 unit tests check the dispatch and fault behavior.
   </p>
   <!-- EDIT: this demo is a small JavaScript stand-in for the C++ simulator's block logic.
        Read through the script at the bottom so you can explain it in an interview. -->
@@ -266,7 +267,7 @@
   <p class="caption">Ryan thinks he's very funny by saying the motor isn't spinning.</p>
 
   <h3>Elevator control system</h3>
-  <p class="meta">ARM Cortex-M4 assembly</p>
+  <p class="meta">ARM Cortex-M4 assembly. <a href="https://github.com/bennettfix/Elevator-in-Assembly">Source code on GitHub</a></p>
   <p>
     An elevator controller written in assembly for a course project. It handles floor
     selection from a keypad, tracks the car's position, drives a stepper motor between
@@ -550,10 +551,11 @@ document.getElementById("hits").textContent =
     var center = (sum(wf.slice(0, WIN)) + wf[WIN] / 2) / tot * TAU;
     var start = rotation % TAU, target = -Math.PI / 2 - center;
     var end = target + TAU * Math.ceil((start - target) / TAU) + TAU * 6;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      rotation = end; draw(rotation, 1); finish(); return;
-    }
-    var dur = 5500, t0 = performance.now();
+    // The spin only runs when someone clicks, so it always animates. People who have
+    // "reduce motion" turned on get a shorter, calmer spin instead of skipping it.
+    var calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (calm) end -= TAU * 4;
+    var dur = calm ? 3000 : 5500, t0 = performance.now();
     function frame(now) {
       var t = Math.min((now - t0) / dur, 1);
       var ease = 1 - Math.pow(1 - t, 3);
