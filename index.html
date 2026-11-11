@@ -214,7 +214,7 @@
   <table class="skills">
     <tr><td>Hardware</td><td>STM32, FPGA, stepper motors, keypads, 7-segment displays, UART</td></tr>
     <tr><td>Languages</td><td>C++, C, ARM assembly, VHDL, Python, Lua</td></tr>
-    <tr><td>Tools</td><td>Git, GitHub, CMake, VS Code, STM32CubeIDE, Catch2, Quartus, ModelSim</td></tr>
+    <tr><td>Tools</td><td>Git, GitHub, GitHub Actions, CMake, VS Code, STM32CubeIDE, Catch2, Quartus, ModelSim</td></tr>
     <tr><td>Libraries</td><td>Tkinter, pygame, Google Colab</td></tr>
   </table>
 </section>
@@ -223,39 +223,43 @@
   <h2>Projects</h2>
 
   <h3>Virtual Attraction Control System (VACS)</h3>
-  <p class="meta">C++, CMake, Catch2. Completed November 2026.
+  <p class="meta">C++, CMake, Catch2, GitHub Actions. Completed November 2026.
     <a href="https://github.com/bennettfix/Dark-Ride-Control-System">Source code on GitHub</a></p>
   <p>
-    A simulator of the control system for a multi-vehicle dark ride. It manages block
-    occupancy, only authorizes dispatch when the station's safety interlocks are satisfied,
-    and stops vehicle movement on sensor failures, communication faults, or an emergency
-    stop. A show control layer triggers lighting, audio, and effects cues as vehicles
-    reach each scene. Catch2 unit tests check the dispatch and fault behavior.
+    A C++ simulator of a multi-vehicle attraction control system. VACS manages exclusive
+    block occupancy, only permits dispatch when station safety interlocks are satisfied,
+    and inhibits ride movement during emergency stops or communication faults. A CAN-style
+    communication layer provides vehicle heartbeat and status messages, while a show
+    controller triggers lighting, animatronic, and audio cues as vehicles enter the show
+    scene. Catch2 tests and GitHub Actions verify dispatch, fault handling, block
+    protection, and recovery behavior.
   </p>
-  <!-- EDIT: this demo is a small JavaScript stand-in for the C++ simulator's block logic.
-       Read through the script at the bottom so you can explain it in an interview. -->
+  <!-- This demo is a JavaScript model of VACS's three-block layout. The real system is the C++ repo. -->
   <div class="sim">
-<pre class="diagram" id="sim-view"> [LOAD] --&gt; [ B1 ] --&gt; [ B2 ] --&gt; [ B3 ] --&gt; [UNLD]
-    ^                                          |
-    +------------------------------------------+</pre>
+<pre class="diagram" id="sim-view"> [ STATION ] ---&gt; [ TRACK ] ---&gt; [ SHOW ]
+     [4]             [3]            [2]</pre>
     <p class="sim-status" id="sim-status" aria-live="polite">Status: loading</p>
     <p class="sim-controls">
       <button type="button" id="sim-dispatch">Dispatch</button>
-      <button type="button" id="sim-run">Pause</button>
+      <button type="button" id="sim-cycle">Run Cycle</button>
       <button type="button" id="sim-estop">E-stop</button>
       <button type="button" id="sim-reset">Reset</button>
-      <button type="button" id="sim-fault">Fail B2 sensor</button>
-      <label><input type="checkbox" id="sim-auto"> Auto dispatch</label>
+      <button type="button" id="sim-hb">Drop Vehicle 2 Heartbeat</button>
     </p>
 <pre class="sim-log" id="sim-log"></pre>
   </div>
   <p class="caption">
-    Try it: a small JavaScript illustration of the block logic from VACS
-    (not the simulator itself). Each block holds one car, and a car
-    only moves forward when the next block is clear. <tt>[1]</tt> is a moving car,
-    <tt>&lt;1&gt;</tt> is a car being held. Fail the B2 sensor to see the fail-safe:
-    a block the system can't read is treated as occupied, so nothing enters it.
+    Try it: a JavaScript model of the VACS layout (the real simulator is the C++ code on
+    GitHub). Each block holds one vehicle, and dispatch is only permitted when the station
+    is secure and the track block is clear. Drop vehicle 2's heartbeat and run two cycles
+    to trip the communication watchdog.
   </p>
+  <!-- TODO: architecture diagram goes here once Bennett sends it, e.g.
+  <details>
+    <summary>System architecture</summary>
+    <img src="vacs-architecture.png" alt="VACS system architecture" style="width:70%;max-width:100%">
+  </details>
+  -->
   <!-- TODO: add demo video link when ready -->
 
   <h3>RC car</h3>
@@ -382,114 +386,138 @@ document.getElementById("hits").textContent =
 </script>
 <script>
 (function () {
-  var NAMES = ["LOAD", "B1", "B2", "B3", "UNLD"];
-  var LABELS = ["[LOAD]", "[ B1 ]", "[ B2 ]", "[ B3 ]", "[UNLD]"];
-  var TRAVEL = [2, 3, 3, 3, 4]; // ticks a car spends in each block before it can leave
+  // A small JavaScript model of VACS: three exclusive blocks, station interlocks,
+  // E-stop, a heartbeat watchdog, and show cues. The real system is the C++ repo.
   var view = document.getElementById("sim-view");
   var statusEl = document.getElementById("sim-status");
   var logEl = document.getElementById("sim-log");
-  var autoEl = document.getElementById("sim-auto");
-  var runBtn = document.getElementById("sim-run");
-  var cars, t, estop, dispatchReq, log, running, fault = -1;
+  var hbBtn = document.getElementById("sim-hb");
+  var VEHICLES = [1, 2, 3, 4];
+  var SHOW_TIME = 2;        // cycles a vehicle spends in the show scene
+  var WATCHDOG_LIMIT = 2;   // missed heartbeats before a communication fault
+  var cycle, blocks, outside, showTime, stationSecure, dispatchOk, estop, commFault, hbDropped, missed, log;
 
-  function add(msg) {
-    log.unshift("t=" + String(t).padStart(3, "0") + "  " + msg);
-    log = log.slice(0, 6);
-  }
-  function carIn(b) {
-    for (var i = 0; i < cars.length; i++) if (cars[i].b === b) return cars[i];
-    return null;
-  }
+  function pad(n) { return String(n).padStart(3, "0"); }
+  function add(msg) { log.unshift("c" + pad(cycle) + "  " + msg); log = log.slice(0, 7); }
+  function inhibited() { return estop || commFault !== 0; }
 
   function init() {
-    cars = [{ id: 1, b: 0, time: 2, held: false },
-            { id: 2, b: 2, time: 0, held: false },
-            { id: 3, b: 4, time: 0, held: false }];
-    t = 0; estop = false; dispatchReq = false; log = []; fault = -1;
-    document.getElementById("sim-fault").textContent = "Fail B2 sensor";
-    add("System ready. Car 1 at load, waiting for dispatch.");
+    cycle = 0;
+    blocks = [4, 3, 2];     // vehicle ids in STATION, TRACK, SHOW (0 = empty)
+    outside = [1];          // vehicle 1 has finished and is waiting outside the ride
+    showTime = 0; stationSecure = true; dispatchOk = false;
+    estop = false; commFault = 0; hbDropped = false;
+    missed = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    log = [];
+    add("System ready. Vehicle 4 secured at station.");
+    hbBtn.textContent = "Drop Vehicle 2 Heartbeat";
     render();
   }
 
-  function step() {
-    if (estop || !running) return;
-    t++;
-    cars.forEach(function (c) {
-      c.time++;
-      var next = (c.b + 1) % NAMES.length;
-      var ready = c.time >= TRAVEL[c.b];
-      if (c.b === 0) ready = ready && (dispatchReq || autoEl.checked);
-      if (!ready) return;
-      if (carIn(next) || next === fault) {
-        if (!c.held) add("Car " + c.id + " held in " + NAMES[c.b] + ": " + NAMES[next] +
-          (next === fault ? " sensor failed, treated as occupied" : " occupied"));
-        c.held = true;
-        return;
+  function runCycle() {
+    cycle++;
+    // CAN-style heartbeats: every vehicle reports each cycle unless its heartbeat is dropped
+    VEHICLES.forEach(function (id) {
+      missed[id] = (id === 2 && hbDropped) ? missed[id] + 1 : 0;
+      if (missed[id] >= WATCHDOG_LIMIT && commFault === 0) {
+        commFault = id;
+        add("Watchdog: vehicle " + id + " heartbeat lost. Movement inhibited.");
       }
-      if (c.b === 0) { add("Car " + c.id + " dispatched"); dispatchReq = false; }
-      else if (c.held) add("Car " + c.id + " released from " + NAMES[c.b]);
-      c.held = false; c.b = next; c.time = 0;
-      if (next === 0) add("Car " + c.id + " arrived at load");
     });
+    if (inhibited()) {
+      dispatchOk = false;
+      add("No movement: " + (estop ? "E-stop active" : "communication fault"));
+      render(); return;
+    }
+    // SHOW: vehicle stays for the scene, then leaves the ride
+    if (blocks[2]) {
+      showTime++;
+      if (showTime >= SHOW_TIME) { add("Vehicle " + blocks[2] + " finished the ride"); outside.push(blocks[2]); blocks[2] = 0; }
+    }
+    // TRACK -> SHOW, only when the show block is free
+    if (blocks[1]) {
+      if (!blocks[2]) {
+        blocks[2] = blocks[1]; blocks[1] = 0; showTime = 0;
+        add("Vehicle " + blocks[2] + " entered SHOW: lighting, animatronic, audio cues");
+      } else add("Vehicle " + blocks[1] + " held on TRACK: SHOW occupied");
+    }
+    // STATION -> TRACK on an authorized dispatch
+    if (dispatchOk && blocks[0] && !blocks[1]) {
+      blocks[1] = blocks[0]; blocks[0] = 0;
+      add("Vehicle " + blocks[1] + " departed station");
+    }
+    dispatchOk = false;
+    // Load the next vehicle, then secure it on the following cycle
+    if (!blocks[0] && outside.length) {
+      blocks[0] = outside.shift(); stationSecure = false;
+      add("Vehicle " + blocks[0] + " loading: gates open, restraints unlocked");
+    } else if (blocks[0] && !stationSecure) {
+      stationSecure = true;
+      add("Station secure: gates closed, restraints locked");
+    }
     render();
   }
 
   function render() {
-    var row = new Array(52).join(" ").split("");
-    for (var b = 0; b < NAMES.length; b++) {
-      var c = carIn(b), col = 2 + 11 * b;
-      var mark = c ? (c.held ? "<" + c.id + ">" : "[" + c.id + "]") : " . ";
-      for (var k = 0; k < 3; k++) row[col + k] = mark[k];
+    var row = new Array(42).join(" ").split("");
+    var cols = [5, 21, 36];
+    for (var b = 0; b < 3; b++) {
+      var id = blocks[b];
+      var mark = id ? (missed[id] > 0 ? "!" + id + "!" : "[" + id + "]") : " . ";
+      for (var k = 0; k < 3; k++) row[cols[b] + k] = mark[k];
     }
+    var station = !blocks[0] ? "empty" :
+      (stationSecure ? "gates CLOSED, restraints LOCKED" : "gates OPEN, restraints UNLOCKED");
+    var hb = VEHICLES.map(function (id) { return "V" + id + (missed[id] > 0 ? " MISS" : " OK"); }).join("  ");
     view.textContent =
-      " " + LABELS.map(function (l, i) { return i === fault ? "[!" + NAMES[i] + "!]" : l; }).join(" --> ") + "\n" +
-      row.join("").replace(/\s+$/, "") + "\n" +
-      "    ^" + new Array(44).join(" ") + "|\n" +
-      "    +" + new Array(44).join("-") + "+";
-    var occ = cars.length + "/" + NAMES.length;
+      " [ STATION ] ---> [ TRACK ] ---> [ SHOW ]\n" +
+      row.join("").replace(/\s+$/, "") + "\n\n" +
+      " Outside ride: " + (outside.length ? outside.join(", ") : "none") + "\n" +
+      " Station:      " + station + "\n" +
+      " Heartbeats:   " + hb;
     if (estop) {
-      statusEl.textContent = "Status: E-STOP. Press Reset to clear.";
+      statusEl.textContent = "Status: E-STOP. Movement inhibited. Press Reset.";
       statusEl.className = "sim-status alert";
-    } else if (fault >= 0) {
-      statusEl.textContent = "Status: " + (running ? "RUNNING" : "PAUSED") + "   FAULT: " + NAMES[fault] + " sensor (fail-safe hold)";
+    } else if (commFault) {
+      statusEl.textContent = "Status: COMM FAULT (vehicle " + commFault + "). Movement inhibited.";
       statusEl.className = "sim-status alert";
     } else {
-      statusEl.textContent = "Status: " + (running ? "RUNNING" : "PAUSED") + "   Blocks occupied: " + occ;
+      statusEl.textContent = "Status: RUNNING   Cycle " + pad(cycle) + (dispatchOk ? "   Dispatch authorized" : "");
       statusEl.className = "sim-status";
     }
     logEl.textContent = log.join("\n");
   }
 
   document.getElementById("sim-dispatch").onclick = function () {
-    if (estop) { add("Dispatch refused: E-stop active"); }
-    else if (!carIn(0)) { add("Dispatch refused: no car at load"); }
-    else { dispatchReq = true; add("Dispatch requested for car " + carIn(0).id); }
+    var reason = estop ? "E-stop active" :
+      commFault ? "communication fault" :
+      !blocks[0] ? "no vehicle at station" :
+      !stationSecure ? "restraints not locked" :
+      blocks[1] ? "TRACK block occupied" : "";
+    if (reason) add("Dispatch refused: " + reason);
+    else { dispatchOk = true; add("Dispatch authorized for vehicle " + blocks[0] + ". Run a cycle."); }
     render();
   };
+  document.getElementById("sim-cycle").onclick = runCycle;
   document.getElementById("sim-estop").onclick = function () {
-    if (!estop) { estop = true; add("E-stop pressed. All motion stopped."); }
+    if (!estop) { estop = true; dispatchOk = false; add("E-stop pressed. All movement inhibited."); }
     render();
   };
   document.getElementById("sim-reset").onclick = function () {
-    if (estop) { estop = false; add("E-stop reset. Ride ready."); }
-    else { init(); return; }
+    if (!estop && !commFault) { init(); return; }
+    if (commFault && hbDropped) { add("Reset refused: vehicle 2 heartbeat still missing"); render(); return; }
+    estop = false; commFault = 0;
+    add("Faults cleared. Ride ready.");
     render();
   };
-  document.getElementById("sim-fault").onclick = function () {
-    if (fault < 0) { fault = 2; add("B2 sensor failed. Block locked out as occupied."); this.textContent = "Repair B2 sensor"; }
-    else { fault = -1; add("B2 sensor repaired. Block back in service."); this.textContent = "Fail B2 sensor"; }
-    render();
-  };
-  runBtn.onclick = function () {
-    running = !running;
-    runBtn.textContent = running ? "Pause" : "Run";
+  hbBtn.onclick = function () {
+    hbDropped = !hbDropped;
+    if (hbDropped) { add("Vehicle 2 heartbeat stopped"); hbBtn.textContent = "Restore Vehicle 2 Heartbeat"; }
+    else { missed[2] = 0; add("Vehicle 2 heartbeat restored"); hbBtn.textContent = "Drop Vehicle 2 Heartbeat"; }
     render();
   };
 
-  running = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  runBtn.textContent = running ? "Pause" : "Run";
   init();
-  setInterval(step, 600);
 })();
 </script>
 <script>
