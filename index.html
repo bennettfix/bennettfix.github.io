@@ -115,7 +115,8 @@
   #wheel { width: 100%; max-width: 320px; height: auto; aspect-ratio: 1; cursor: pointer; display: block; margin: 0 auto; }
   #wheel-spin { font: bold 16px "Times New Roman", Times, serif; padding: 0.25em 1.2em; }
   #wheel-result { min-height: 1.5em; }
-  video.clip { width: 100%; max-width: 32em; display: block; border: 1px solid var(--border); background: #000; margin: 0.4em 0; }
+  img.clip, video.clip { height: auto; }
+  img.clip, video.clip { width: 100%; max-width: 32em; display: block; border: 1px solid var(--border); background: #000; margin: 0.4em 0; }
   table.skills td:first-child { font-weight: bold; white-space: nowrap; }
   table { border-collapse: collapse; }
   td { padding: 0.15em 1.2em 0.15em 0; vertical-align: top; }
@@ -279,6 +280,10 @@
     selection from a keypad, tracks the car's position, drives a stepper motor between
     floors, and shows the current floor on a 7-segment display.
   </p>
+  <img class="clip" src="elevator-hardware.jpg" width="1200" height="741" loading="lazy"
+    alt="Elevator controller hardware: an STM32 Nucleo board wired to a keypad, stepper motors, a driver board, and a breadboard with a 7-segment display showing 2">
+  <p class="caption">The full setup: STM32 Nucleo, keypad, stepper motors and driver board, and the
+    7-segment display (currently on floor 2).</p>
 
   <h3>STM32 ASCII animation</h3>
   <p class="meta">C, STM32 Nucleo</p>
