@@ -117,6 +117,22 @@
   #wheel-result { min-height: 1.5em; }
   img.clip, video.clip { height: auto; }
   img.clip, video.clip { width: 100%; max-width: 32em; display: block; border: 1px solid var(--border); background: #000; margin: 0.4em 0; }
+  .diagram-img { width: 70%; min-width: 260px; max-width: 100%; height: auto; display: block; border: 1px solid var(--border); margin: 0.6em 0 0.3em; }
+  .repo { margin: 0.3em 0 0.7em; }
+  .repo-link {
+    display: inline-block; font-weight: bold; text-decoration: none;
+    background: var(--side); border: 2px outset #c0c0c0; padding: 0.2em 0.8em;
+  }
+  .repo-link:active { border-style: inset; }
+  .repo-path { display: block; margin-top: 0.25em; font: 0.85em "Courier New", Courier, monospace; color: var(--muted); }
+  .demo-box { border: 2px dashed var(--border); padding: 0.6em 0.75em; margin: 1em 0 0.5em; }
+  .demo-label {
+    display: inline-block; margin: 0 0 0.4em; padding: 2px 8px;
+    background: #ffee00; color: #000; border: 1px solid #000;
+    font: bold 12px Verdana, Geneva, sans-serif; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .demo-note { margin: 0 0 0.6em; font-size: 0.95em; }
+  .demo-box .caption { margin-bottom: 0; }
   table.skills td:first-child { font-weight: bold; white-space: nowrap; }
   table { border-collapse: collapse; }
   td { padding: 0.15em 1.2em 0.15em 0; vertical-align: top; }
@@ -182,6 +198,13 @@
     <li><a href="#contact">Contact</a></li>
   </ul>
 
+  <h4>Source code</h4>
+  <ul>
+    <li><a href="https://github.com/bennettfix/Dark-Ride-Control-System">VACS (C++)</a></li>
+    <li><a href="https://github.com/bennettfix/Elevator-in-Assembly">Elevator (ARM asm)</a></li>
+    <li><a href="https://github.com/bennettfix">All projects</a></li>
+  </ul>
+
   <h4>Currently</h4>
   <!-- EDIT: keep this short and current -->
   <p>Working attractions at Walt Disney World. Just finished VACS, my attraction control
@@ -224,8 +247,12 @@
   <h2>Projects</h2>
 
   <h3>Virtual Attraction Control System (VACS)</h3>
-  <p class="meta">C++, CMake, Catch2, GitHub Actions. Completed November 2026.
-    <a href="https://github.com/bennettfix/Dark-Ride-Control-System">Source code on GitHub</a></p>
+  <p class="meta">C++, CMake, Catch2, GitHub Actions. Completed November 2026.</p>
+  <p class="repo">
+    <a class="repo-link" href="https://github.com/bennettfix/Dark-Ride-Control-System">View the VACS source code on GitHub &rarr;</a>
+    <span class="repo-path">github.com/bennettfix/Dark-Ride-Control-System</span>
+  </p>
+  <p class="meta">Video demo of the real VACS: coming soon.</p>
   <p>
     A C++ simulator of a multi-vehicle attraction control system. VACS manages exclusive
     block occupancy, only permits dispatch when station safety interlocks are satisfied,
@@ -235,32 +262,39 @@
     scene. Catch2 tests and GitHub Actions verify dispatch, fault handling, block
     protection, and recovery behavior.
   </p>
-  <!-- This demo is a JavaScript model of VACS's three-block layout. The real system is the C++ repo. -->
-  <div class="sim">
+  <img class="diagram-img" src="vacs-architecture.png" width="1010" height="850" loading="lazy"
+    alt="VACS architecture: RideController connects to the StationController, the CAN bus, the ShowController, and the block system. The CAN bus links vehicle controllers 1, 2, and more, which report to the block system. The block system manages Block 0 Station, Block 1 Track, and Block 2 Show Scene.">
+  <p class="caption">VACS system architecture.</p>
+  <!-- More screenshots of the real VACS go here (terminal output, tests passing) -->
+
+  <div class="demo-box">
+    <p class="demo-label">Concept demo &mdash; not VACS</p>
+    <p class="demo-note">
+      This is a simplified JavaScript model written for this webpage, with help from Claude,
+      to show a few of the ideas behind VACS: block occupancy, dispatch permissives, E-stop,
+      and a heartbeat watchdog. <b>It is not the VACS code</b> and leaves out most of the
+      real system. The actual project is the C++ code
+      <a href="https://github.com/bennettfix/Dark-Ride-Control-System">on GitHub</a>.
+    </p>
+    <div class="sim">
 <pre class="diagram" id="sim-view"> [ STATION ] ---&gt; [ TRACK ] ---&gt; [ SHOW ]
      [4]             [3]            [2]</pre>
-    <p class="sim-status" id="sim-status" aria-live="polite">Status: loading</p>
-    <p class="sim-controls">
-      <button type="button" id="sim-dispatch">Dispatch</button>
-      <button type="button" id="sim-cycle">Run Cycle</button>
-      <button type="button" id="sim-estop">E-stop</button>
-      <button type="button" id="sim-reset">Reset</button>
-      <button type="button" id="sim-hb">Drop Vehicle 2 Heartbeat</button>
-    </p>
+      <p class="sim-status" id="sim-status" aria-live="polite">Status: loading</p>
+      <p class="sim-controls">
+        <button type="button" id="sim-dispatch">Dispatch</button>
+        <button type="button" id="sim-cycle">Run Cycle</button>
+        <button type="button" id="sim-estop">E-stop</button>
+        <button type="button" id="sim-reset">Reset</button>
+        <button type="button" id="sim-hb">Drop Vehicle 2 Heartbeat</button>
+      </p>
 <pre class="sim-log" id="sim-log"></pre>
+    </div>
+    <p class="caption">
+      How to use it: press Dispatch, then Run Cycle to move vehicles forward one step.
+      Dispatch is refused unless the station is secure and the track block is clear.
+      Drop vehicle 2's heartbeat and run two cycles to trip the watchdog.
+    </p>
   </div>
-  <p class="caption">
-    Try it: a JavaScript model of the VACS layout (the real simulator is the C++ code on
-    GitHub). Each block holds one vehicle, and dispatch is only permitted when the station
-    is secure and the track block is clear. Drop vehicle 2's heartbeat and run two cycles
-    to trip the communication watchdog.
-  </p>
-  <!-- TODO: architecture diagram goes here once Bennett sends it, e.g.
-  <details>
-    <summary>System architecture</summary>
-    <img src="vacs-architecture.png" alt="VACS system architecture" style="width:70%;max-width:100%">
-  </details>
-  -->
   <!-- TODO: add demo video link when ready -->
 
   <h3>RC car</h3>
@@ -348,7 +382,8 @@
   <h2>Other things</h2>
   <p>
     Selected for Disney's Tech Behind the Dreams experience, a look at the technical
-    disciplines behind themed entertainment.
+    disciplines behind themed entertainment. Member of the Themed Entertainment
+    Association (TEA).
   </p>
   <p>
     Eagle Scout (Troop 127) and former Senior Patrol Leader. Outside of engineering I backpack,
